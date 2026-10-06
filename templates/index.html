@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>붓꽃 품종 판별기 — AI 데이터 분석 & 지표 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <header class="hero-header">
+    <div class="badge-tag">📊 IRIS-AI METRICS & PREDICTION</div>
+    <h1>붓꽃 품종 판별기 & 데이터 지표</h1>
+    <p class="hero-sub">
+      실제 붓꽃 데이터셋(150건)에 존재하는 <strong>유효한 수치 범위 내에서만 정밀 설정</strong>하여,<br>
+      머신러닝(랜덤 포레스트)과 딥러닝(인공신경망)의 판별 결과 및 실시간 데이터 지표를 확인하세요.
+    </p>
+  </header>
+
+  <!-- 모델 성능 지표 요약 배너 -->
+  <section class="panel metrics-summary-bar">
+    <div class="metric-item">
+      <span class="m-label">🤖 랜덤 포레스트 정확도</span>
+      <span class="m-val">{{ (metrics.rf * 100)|round(1) }}%</span>
+      <span class="m-desc">의사결정나무 앙상블</span>
+    </div>
+    <div class="metric-divider"></div>
+    <div class="metric-item">
+      <span class="m-label">🧠 인공신경망(MLP) 정확도</span>
+      <span class="m-val">{{ (metrics.nn * 100)|round(1) }}%</span>
+      <span class="m-desc">다층 퍼셉트론 딥러닝</span>
+    </div>
+    <div class="metric-divider"></div>
+    <div class="metric-item">
+      <span class="m-label">📦 학습 데이터 크기</span>
+      <span class="m-val">150건</span>
+      <span class="m-desc">3개 품종 각 50건 균등</span>
+    </div>
+  </section>
+
+  <!-- 빠른 실제 데이터 프리셋 설정 -->
+  <section class="panel preset-panel">
+    <div class="panel-header">
+      <h2>🎯 실제 데이터셋 기반 프리셋 선택</h2>
+      <span class="panel-tip">클릭 한 번으로 실제 데이터 기준값이 자동 설정됩니다</span>
+    </div>
+    <div class="preset-buttons">
+      <button type="button" class="btn-preset" data-preset="setosa">
+        <span class="p-icon">🌸</span>
+        <span class="p-name">세토사 (평균)</span>
+        <small>5.0 / 3.4 / 1.5 / 0.2 cm</small>
+      </button>
+      <button type="button" class="btn-preset" data-preset="versicolor">
+        <span class="p-icon">🌿</span>
+        <span class="p-name">버시컬러 (평균)</span>
+        <small>5.9 / 2.8 / 4.3 / 1.3 cm</small>
+      </button>
+      <button type="button" class="btn-preset" data-preset="virginica">
+        <span class="p-icon">🌺</span>
+        <span class="p-name">버지니카 (평균)</span>
+        <small>6.6 / 3.0 / 5.6 / 2.0 cm</small>
+      </button>
+      <button type="button" class="btn-preset btn-preset--random" id="btnRandom">
+        <span class="p-icon">🎲</span>
+        <span class="p-name">실제 데이터 1건 추출</span>
+        <small>DB 150건 중 무작위 로드</small>
+      </button>
+    </div>
+  </section>
+
+  <!-- 수치 설정 폼 (슬라이더 + 인풋 결합: 실제 데이터 범위만 조절 가능) -->
+  <section class="panel input-panel">
+    <div class="panel-header">
+      <h2>📏 꽃 크기 설정 (데이터 범위 제한 슬라이더)</h2>
+      <span class="panel-guide">실제 붓꽃 데이터의 최소(Min) ~ 최대(Max) 범위 내에서만 조절됩니다</span>
+    </div>
+
+    <div class="sliders-grid">
+      <!-- 1. 꽃받침 길이 -->
+      <div class="control-card">
+        <div class="control-card__head">
+          <label for="sepal_len">꽃받침 길이 (Sepal Length)</label>
+          <div class="value-wrap">
+            <input id="sepal_len" type="number" min="4.3" max="7.9" step="0.1" value="5.8">
+            <span class="unit">cm</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <input id="sepal_len_range" class="range-slider" type="range" min="4.3" max="7.9" step="0.1" value="5.8">
+        </div>
+        <div class="range-info">
+          <span>데이터 최소 <b>4.3 cm</b></span>
+          <span>전체 평균 <b>5.84 cm</b></span>
+          <span>데이터 최대 <b>7.9 cm</b></span>
+        </div>
+      </div>
+
+      <!-- 2. 꽃받침 너비 -->
+      <div class="control-card">
+        <div class="control-card__head">
+          <label for="sepal_w">꽃받침 너비 (Sepal Width)</label>
+          <div class="value-wrap">
+            <input id="sepal_w" type="number" min="2.0" max="4.4" step="0.1" value="3.0">
+            <span class="unit">cm</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <input id="sepal_w_range" class="range-slider" type="range" min="2.0" max="4.4" step="0.1" value="3.0">
+        </div>
+        <div class="range-info">
+          <span>데이터 최소 <b>2.0 cm</b></span>
+          <span>전체 평균 <b>3.05 cm</b></span>
+          <span>데이터 최대 <b>4.4 cm</b></span>
+        </div>
+      </div>
+
+      <!-- 3. 꽃잎 길이 -->
+      <div class="control-card">
+        <div class="control-card__head">
+          <label for="petal_len">꽃잎 길이 (Petal Length)</label>
+          <div class="value-wrap">
+            <input id="petal_len" type="number" min="1.0" max="6.9" step="0.1" value="3.8">
+            <span class="unit">cm</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <input id="petal_len_range" class="range-slider" type="range" min="1.0" max="6.9" step="0.1" value="3.8">
+        </div>
+        <div class="range-info">
+          <span>데이터 최소 <b>1.0 cm</b></span>
+          <span>전체 평균 <b>3.76 cm</b></span>
+          <span>데이터 최대 <b>6.9 cm</b></span>
+        </div>
+      </div>
+
+      <!-- 4. 꽃잎 너비 -->
+      <div class="control-card">
+        <div class="control-card__head">
+          <label for="petal_w">꽃잎 너비 (Petal Width)</label>
+          <div class="value-wrap">
+            <input id="petal_w" type="number" min="0.1" max="2.5" step="0.1" value="1.2">
+            <span class="unit">cm</span>
+          </div>
+        </div>
+        <div class="slider-row">
+          <input id="petal_w_range" class="range-slider" type="range" min="0.1" max="2.5" step="0.1" value="1.2">
+        </div>
+        <div class="range-info">
+          <span>데이터 최소 <b>0.1 cm</b></span>
+          <span>전체 평균 <b>1.20 cm</b></span>
+          <span>데이터 최대 <b>2.5 cm</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button id="go" class="btn-primary">🔮 AI 품종 판별 &amp; 지표 분석 실행</button>
+      <span id="randomNotice" class="random-badge" hidden></span>
+    </div>
+    <p id="err" class="error-msg" role="alert"></p>
+  </section>
+
+  <!-- AI 판별 결과 & 실시간 데이터 지표 대시보드 -->
+  <section id="result" class="panel result-panel" hidden>
+    <div class="panel-header">
+      <h2>🏆 AI 품종 판별 결과 &amp; 비교 지표</h2>
+      <span class="panel-tip" id="consensusBadge">두 모델의 판정이 일치합니다</span>
+    </div>
+
+    <!-- 1. 두 AI 모델의 예측 결과 비교 -->
+    <div class="ai-models-grid">
+      <div class="ai-card">
+        <div class="ai-card__header">
+          <span class="ai-badge">머신러닝</span>
+          <h3>랜덤 포레스트</h3>
+          <small>정확도 {{ (metrics.rf * 100)|round(1) }}%</small>
+        </div>
+        <div id="rf" class="ai-card__body"></div>
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-card__header">
+          <span class="ai-badge ai-badge--dl">딥러닝</span>
+          <h3>다층 인공신경망 (MLP)</h3>
+          <small>정확도 {{ (metrics.nn * 100)|round(1) }}%</small>
+        </div>
+        <div id="nn" class="ai-card__body"></div>
+      </div>
+    </div>
+
+    <!-- 2. 입력값 vs 실제 데이터셋 평균 지표 비교 카드 -->
+    <div class="comparison-section">
+      <h3>📊 입력 데이터 vs 전체 데이터셋 평균 비교 지표</h3>
+      <div class="comparison-grid" id="compGrid">
+        <!-- JS 동적 렌더링 -->
+      </div>
+    </div>
+  </section>
+
+  <!-- 최근 판별 기록 이력 -->
+  <section class="panel">
+    <div class="panel-header">
+      <h2>📜 최근 판별 기록 이력</h2>
+      <span class="panel-tip">SQLite iris.db 실시간 기록 연동</span>
+    </div>
+    <ul id="history" class="history-list">
+      <li class="empty">아직 판별 기록이 없습니다. 위에서 수치를 설정하고 판별해 보세요.</li>
+    </ul>
+  </section>
+
+  <!-- 학습 데이터 4대 수치 통계 요약표 -->
+  <section class="panel">
+    <div class="panel-header">
+      <h2>📚 학습 데이터셋(150건) 품종별 4대 지표 요약</h2>
+      <span class="panel-tip">실제 붓꽃 기준 통계</span>
+    </div>
+    <div class="table-wrap">
+      <table id="stats">
+        <thead>
+          <tr>
+            <th>품종</th>
+            <th>데이터 수</th>
+            <th>평균 꽃받침 길이</th>
+            <th>평균 꽃받침 너비</th>
+            <th>평균 꽃잎 길이</th>
+            <th>평균 꽃잎 너비</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- JS 동적 렌더링 -->
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
